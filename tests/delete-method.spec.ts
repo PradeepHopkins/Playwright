@@ -14,7 +14,7 @@ test('Delete Articles', async ({ request }) => {
     const newArticlesResponse = await request.post('https://conduit-api.bondaracademy.com/api/articles/', {
         data: {
             "article": {
-                "title": "Cricket",
+                "title": "Cricket_01",
                 "description": "Test",
                 "body": "Australia vs England Ashes Test Series will be start at end of the November.",
                 "tagList": []
@@ -27,7 +27,7 @@ test('Delete Articles', async ({ request }) => {
 
     const newArticlesResponseJson = await newArticlesResponse.json()
     expect(newArticlesResponse.status()).toEqual(201)
-    expect(newArticlesResponseJson.article.title).toBe('Cricket')
+    expect(newArticlesResponseJson.article.title).toBe('Cricket_01')
     const slug = newArticlesResponseJson.article.slug
 
     // Delete API

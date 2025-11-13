@@ -14,7 +14,7 @@ test('PUt Update Articles', async ({ request }) => {
     const newArticlesResponse = await request.post('https://conduit-api.bondaracademy.com/api/articles/', {
         data: {
             "article": {
-                "title": "Cricket",
+                "title": "Cricket_02",
                 "description": "Test",
                 "body": "Australia vs England Ashes Test Series will be start at end of the November.",
                 "tagList": []
@@ -27,19 +27,19 @@ test('PUt Update Articles', async ({ request }) => {
 
     const newArticlesResponseJson = await newArticlesResponse.json()
     expect(newArticlesResponse.status()).toEqual(201)
-    expect(newArticlesResponseJson.article.title).toBe('Cricket')
+    expect(newArticlesResponseJson.article.title).toBe('Cricket_02')
     const slug = newArticlesResponseJson.article.slug
 
     // Put API
     const updateArticlesResponse = await request.put(`https://conduit-api.bondaracademy.com/api/articles/${slug}`, {
-        data: { "article": { "title": "Cricket_01", "description": "Test Match", "body": "Australia vs England Ashes Test Series will be start at end of the November.", "tagList": [], "slug": "Cricket-38638" } },
+        data: { "article": { "title": "Cricket_03", "description": "Test Match", "body": "Australia vs England Ashes Test Series will be start at end of the November.", "tagList": [], "slug": "Cricket-38638" } },
         headers: {
             Authorization: authToken
         }
     })
     const updateArticlesResponseJson = await updateArticlesResponse.json()
     expect(updateArticlesResponse.status()).toEqual(200)
-    expect(updateArticlesResponseJson.article.title).toBe('Cricket_01')
+    expect(updateArticlesResponseJson.article.title).toBe('Cricket_03')
     const newSlugId = updateArticlesResponseJson.article.slug
 
     // Delete API
