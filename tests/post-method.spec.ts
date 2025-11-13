@@ -27,7 +27,7 @@ test('Create Articles', async ({ request }) => {
 
     const newArticlesResponseJson = await newArticlesResponse.json()
     expect(newArticlesResponse.status()).toEqual(201)
-    expect(newArticlesResponseJson.article.title).toBe('Crickets')
+    expect(newArticlesResponseJson.article.title).toBe('Cricket')
 
     // To Cofirm Articles published 
     const allArticlesResponse = await request.get('https://conduit-api.bondaracademy.com/api/articles?limit=10&offset=0', {
@@ -36,5 +36,5 @@ test('Create Articles', async ({ request }) => {
         }
     })
     const allArticlesResponseJson = await allArticlesResponse.json()
-    expect(allArticlesResponseJson.articles[0].title).toBe('Crickets')
+    expect(allArticlesResponseJson.articles[0].title).toBe('Cricket')
 });
