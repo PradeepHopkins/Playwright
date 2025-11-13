@@ -8,7 +8,7 @@ test('Delete Articles', async ({ request }) => {
     })
     const tokenResponseJson = await tokenResponse.json()
     const authToken = 'Token ' + tokenResponseJson.user.token
-    console.log(authToken)
+    // console.log(authToken)
 
     // Create Articles API
     const newArticlesResponse = await request.post('https://conduit-api.bondaracademy.com/api/articles/', {
