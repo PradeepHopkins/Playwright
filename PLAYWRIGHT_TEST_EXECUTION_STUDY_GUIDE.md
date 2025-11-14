@@ -15,23 +15,41 @@ Test execution is the process of running your test files and generating results.
 
 ---
 
-## Your Configuration Analysis
+## Default Configuration Analysis
 
-### From `playwright.config.ts`:
+### Basic `playwright.config.ts` Structure:
 
 ```typescript
+import { defineConfig, devices } from '@playwright/test';
+
 export default defineConfig({
-  testDir: './tests',           // Where tests are located
-  fullyParallel: false,         // Sequential test execution
-  forbidOnly: !!process.env.CI, // Prevent test.only in CI
-  retries: process.env.CI ? 2 : 0,  // Retries on CI only
-  workers: process.env.CI ? 1 : undefined,  // Workers for parallel execution
-  reporter: [['html'], ['list']], // Report formats
-  projects: [{ name: 'api-test' }]  // Browser/project configs
+  testDir: './tests',                    // Where tests are located
+  fullyParallel: true,                   // Run tests in parallel
+  forbidOnly: !!process.env.CI,          // Prevent test.only in CI
+  retries: process.env.CI ? 2 : 0,       // Retries on CI only
+  workers: process.env.CI ? 1 : undefined, // Workers for parallel execution
+  reporter: 'html',                      // Report format
+  use: {
+    trace: 'on-first-retry',             // Trace on retry
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
 });
 ```
 
-**Key Insight**: Your config is optimized for **API testing** (no browser instances needed), not UI testing.
+**Note**: This guide explains default Playwright configuration options. Your specific project may have different settings optimized for API testing.
 
 ---
 
@@ -131,33 +149,47 @@ test('Test Name', async ({ request }) => {
 
 ## 3. Sequential vs. Parallel Execution
 
-### Your Configuration: Sequential
+### Default Configuration
 
 ```typescript
-fullyParallel: false  // Tests run ONE at a time
+fullyParallel: true  // Tests run in parallel (default)
 ```
 
-### Visual: Sequential Execution (Your Setup)
+### What Can You Change?
+
+This setting controls whether tests run simultaneously or one after another:
+
+```typescript
+// Option 1: Parallel execution (DEFAULT)
+fullyParallel: true
+// Tests run at the same time
+// Faster overall execution
+// Good for independent tests
+// ⏱️ 3 tests × 10 seconds = ~10 seconds total
+
+// Option 2: Sequential execution
+fullyParallel: false
+// Tests run one after another
+// Slower but more stable
+// Good for tests that share state/resources
+// ⏱️ 3 tests × 10 seconds = ~30 seconds total
+```
+
+### Visual: Sequential Execution
 
 ```
 Time →
 ┌──────────────┐
-│  Test 1      │ (hooks.spec.ts)
+│  Test 1      │
 └──────────────┘
                ┌──────────────┐
-               │  Test 2      │ (get-method.spec.ts)
+               │  Test 2      │
                └──────────────┘
                               ┌──────────────┐
-                              │  Test 3      │ (post-method.spec.ts)
+                              │  Test 3      │
                               └──────────────┘
 
 ⏱️ Total time: ~30 seconds (if each test takes 10 seconds)
-```
-
-### Alternative: Parallel Execution
-
-```typescript
-fullyParallel: true  // Tests run SIMULTANEOUSLY
 ```
 
 ### Visual: Parallel Execution
@@ -172,18 +204,112 @@ Time →
 │  Test 3      │
 └──────────────┘
 
-⏱️ Total time: ~10 seconds (3 tests run at once)
+⏱️ Total time: ~10 seconds (3 tests run simultaneously)
 ```
 
-### Why Your Config Uses Sequential (`fullyParallel: false`)
+### When to Use Each
 
-Looking at your test files, they make API calls to the **same Conduit API**:
-- Multiple parallel tests = Multiple simultaneous API calls
-- API might rate-limit concurrent requests
-- Shared authentication token might cause conflicts
-- **Sequential execution avoids these issues**
+**Use Parallel (`fullyParallel: true`)** - Default for UI Tests:
+- Tests are independent
+- No shared state or resources
+- Want faster execution
+- Standard UI testing approach
+
+**Use Sequential (`fullyParallel: false`)** - For Dependent Tests:
+- Tests share resources (database, API)
+- Tests affect each other's state
+- API rate-limiting is a concern
+- Common in API testing suites
 
 ---
+
+## 3.5. forbidOnly: Prevent Accidental test.only()
+
+### Default Configuration
+
+```typescript
+forbidOnly: !!process.env.CI
+```
+
+### What Can You Change?
+
+The `forbidOnly` setting prevents tests with `test.only()` from accidentally running in production pipelines:
+
+```typescript
+// Option 1: Allow .only everywhere (NOT RECOMMENDED)
+forbidOnly: false
+// ✅ Allows: test.only() in all environments
+// ❌ Risk: Accidentally skip tests in CI
+
+// Option 2: Forbid .only everywhere (STRICT)
+forbidOnly: true
+// ❌ Forbids: test.only() everywhere
+// ❌ Problem: Can't use for local debugging
+
+// Option 3: Forbid .only on CI only (RECOMMENDED)
+forbidOnly: !!process.env.CI
+// ✅ On Local: Allows test.only() for debugging
+// ✅ On CI: Forbids test.only() to catch mistakes
+// ✅ Best for: Most projects
+
+// Option 4: Conditional based on custom variable
+forbidOnly: process.env.STRICT === 'true'
+// Control via environment variable
+// ✅ Best for: Team-specific policies
+```
+
+### What is test.only()?
+
+```typescript
+// Regular test - will always run
+test('Get all tags', async ({ request }) => {
+  // ...
+});
+
+// Test with .only - ONLY THIS TEST RUNS
+test.only('Get specific article', async ({ request }) => {
+  // ...
+});
+
+// This test is SKIPPED because another test has .only
+test('Update article', async ({ request }) => {
+  // ...
+});
+```
+
+### forbidOnly Behavior Examples
+
+**With `forbidOnly: false`** (Allow .only):
+```bash
+$ npx playwright test
+✓ Get specific article (test.only is allowed)
+⊘ Get all tags (skipped - another test has .only)
+⊘ Update article (skipped - another test has .only)
+
+Result: ✅ Tests run successfully
+```
+
+**With `forbidOnly: true`** (Forbid .only):
+```bash
+$ npx playwright test
+Error: "forbidOnly" option is set, but test.only() was used
+File: tests/api.spec.ts:15
+```
+
+**With `forbidOnly: !!process.env.CI`** (Local vs CI):
+```bash
+# On Local Machine (no CI env var)
+$ npx playwright test
+✓ Get specific article (.only allowed locally)
+⊘ Get all tags (skipped)
+⊘ Update article (skipped)
+Result: ✅ Works for debugging
+
+# On CI (CI=true)
+$ CI=true npx playwright test
+Error: forbidOnly option is set, but test.only() was used
+Result: ❌ Catches the mistake before committing
+```
 
 ## 4. Workers: Controlling Parallelization
 
@@ -191,27 +317,60 @@ Looking at your test files, they make API calls to the **same Conduit API**:
 
 A worker is a process that runs tests. Multiple workers = parallel execution.
 
-### Your Configuration
+### Default Configuration
 
 ```typescript
 workers: process.env.CI ? 1 : undefined
 ```
 
-| Scenario | Workers | Meaning |
-|----------|---------|---------|
-| **Local machine** | `undefined` | Use default (CPU cores) |
-| **CI/CD Pipeline** | `1` | Sequential - one test at a time |
+This is the recommended pattern in most Playwright configs.
 
-### Examples
+### What Can You Change?
+
+The `workers` setting controls how many parallel processes run tests:
 
 ```typescript
-// Configuration Options:
+// Option 1: Automatic (DEFAULT on local machine)
+workers: undefined
+// Uses all available CPU cores
+// On a 4-core machine: 4 workers
+// On an 8-core machine: 8 workers
+// ✅ Best for: Local development (fastest)
 
-workers: 1        // Sequential (1 test at a time)
-workers: 4        // 4 tests run in parallel
-workers: undefined // Automatic (uses CPU count)
-workers: process.env.WORKERS || 2  // From environment or default to 2
+// Option 2: Single worker (CI/CD default)
+workers: 1
+// Sequential execution (one test at a time)
+// Most stable on shared infrastructure
+// ✅ Best for: CI/CD pipelines, servers
+
+// Option 3: Fixed number
+workers: 2
+workers: 4
+workers: 8
+// Use exactly this many parallel processes
+// ✅ Best for: Specific performance tuning
+
+// Option 4: Conditional (RECOMMENDED)
+workers: process.env.CI ? 1 : undefined
+// On local: Use all CPU cores (undefined = auto)
+// On CI: Use single worker (1)
+// ✅ Best for: Works well everywhere
+
+// Option 5: Environment-based
+workers: process.env.WORKERS ? parseInt(process.env.WORKERS) : 4
+// Get from environment variable or default
+// ✅ Best for: Team configurations
 ```
+
+### Comparison Table
+
+| Setting | Behavior | Use Case | Speed | Stability |
+|---------|----------|----------|-------|-----------|
+| `undefined` | Auto (CPU cores) | Local development | 🟢 Very Fast | 🟡 Good |
+| `1` | Sequential | CI/CD pipelines | 🔴 Slow | 🟢 Very Stable |
+| `2` | 2 parallel | Small projects | 🟡 Medium | 🟢 Stable |
+| `4` | 4 parallel | Medium projects | 🟢 Fast | 🟡 Good |
+| `8+` | Many parallel | Large projects | 🟢 Very Fast | 🟡 Good |
 
 ### Visual: Worker Pools
 
@@ -230,84 +389,122 @@ Worker 4: [Idle]
 ⏱️ Parallel (3 tests at once)
 ```
 
+### Why Use Conditional Workers?
+
+```typescript
+workers: process.env.CI ? 1 : undefined
+```
+
+**On Local Machine** (`undefined`):
+- Uses all available CPU cores
+- Faster test execution
+- Good for development
+
+**On CI/CD** (`1`):
+- Sequential execution
+- More stable and predictable
+- Avoids resource contention
+- Better for shared infrastructure
+
 ---
 
 ## 5. Test Retries
 
-### Your Configuration
+### Default Configuration
 
 ```typescript
 retries: process.env.CI ? 2 : 0
 ```
 
-| Scenario | Retries | Meaning |
-|----------|---------|---------|
-| **Local machine** | `0` | Fail immediately on error |
-| **CI/CD Pipeline** | `2` | Retry failed tests twice |
+This is the standard pattern: retry on CI, but fail fast locally.
 
-### Why Retries on CI Only?
+### What Can You Change?
 
-```
-Local Development:
-- You see the failure immediately
-- Faster feedback loop
-- You fix the issue and re-run
-
-CI/CD Pipeline:
-- Flaky tests fail randomly (network issues, timing)
-- Retries catch temporary failures
-- Reduces false positives
-```
-
-### Example: Test Retry Flow
-
-```
-Test Execution Flow:
-┌─────────────────────┐
-│  Run Test           │
-└────────┬────────────┘
-         │
-         ▼
-    ❌ FAILED
-         │
-         ▼
-┌─────────────────────┐
-│  Retry 1            │
-└────────┬────────────┘
-         │
-         ▼
-    ❌ FAILED
-         │
-         ▼
-┌─────────────────────┐
-│  Retry 2            │
-└────────┬────────────┘
-         │
-         ▼
-    ✅ PASSED (or still failing)
-         │
-         ▼
-Final Result: PASSED (counts as pass if any attempt passes)
-```
-
-### Configuring Retries
+The `retries` setting controls how many times to re-run failed tests:
 
 ```typescript
-// Never retry
+// Option 1: Never retry (LOCAL default)
 retries: 0
+// Failed test fails immediately
+// No re-runs
+// ✅ Best for: Local development (fast feedback)
 
-// Always retry once
+// Option 2: Retry once
 retries: 1
+// If test fails, run it 1 more time
+// Maximum 2 total runs per test
 
-// Retry 3 times
+// Option 3: Retry twice (CI default)
+retries: 2
+// If test fails, run it 2 more times
+// Maximum 3 total runs per test
+// ✅ Best for: CI/CD pipelines
+
+// Option 4: Retry 3+ times
 retries: 3
+retries: 5
+// More retries for flaky tests
+// But takes longer if test keeps failing
+// ✅ Best for: Very flaky or network-dependent tests
 
-// Conditional retry
-retries: process.env.CI ? 3 : 1
+// Option 5: Conditional (RECOMMENDED)
+retries: process.env.CI ? 2 : 0
+// On local: 0 retries (fail fast)
+// On CI: 2 retries (handle flakiness)
+// ✅ Best for: Most projects
 
-// Retry based on environment
-retries: process.env.STRICT_MODE ? 0 : 2
+// Option 6: Always retry
+retries: 2
+// Same number on local and CI
+// ✅ Best for: Consistently flaky tests
 ```
+
+### Retry Behavior Examples
+
+**With `retries: 0`**:
+```
+Test Run:  [Run 1]
+           ❌ FAILED
+Result:    ❌ FAILED (no retries)
+Total Runs: 1
+```
+
+**With `retries: 2`**:
+```
+Test Run:  [Run 1]
+           ❌ FAILED
+           
+           [Run 2]
+           ❌ FAILED
+           
+           [Run 3]
+           ✅ PASSED
+Result:    ✅ PASSED (one retry succeeded)
+Total Runs: 3
+```
+
+**With `retries: 2` (all fail)**:
+```
+Test Run:  [Run 1]
+           ❌ FAILED
+           
+           [Run 2]
+           ❌ FAILED
+           
+           [Run 3]
+           ❌ FAILED
+Result:    ❌ FAILED (all retries exhausted)
+Total Runs: 3
+```
+
+### Comparison Table
+
+| Setting | Behavior | Use Case | Feedback Speed | Reliability |
+|---------|----------|----------|---|---|
+| `0` | No retries | Local dev | 🟢 Fast | 🔴 Fragile |
+| `1` | Retry once | CI/CD | 🟡 Medium | 🟡 Better |
+| `2` | Retry twice | CI/CD standard | 🟡 Slower | 🟢 Good |
+| `3+` | Retry multiple | Very flaky tests | 🔴 Slow | 🟢 Very Reliable |
 
 ---
 
@@ -382,39 +579,95 @@ Total tests executed: 9 (3 projects × 3 tests)
 
 ## 7. Test Reporters
 
-### Your Configuration
+### Default Configuration
 
 ```typescript
-reporter: [['html'], ['list']]
+reporter: 'html'
+// Or multiple reporters:
+reporter: [['html'], ['list'], ['json']]
+```
+
+### What Can You Change?
+
+The `reporter` setting controls how test results are displayed and stored:
+
+```typescript
+// Option 1: Single reporter (simple)
+reporter: 'html'           // HTML only
+reporter: 'list'           // Console only
+reporter: 'json'           // JSON only
+
+// Option 2: Multiple reporters (RECOMMENDED)
+reporter: [
+  ['html'],                // Generate HTML report
+  ['list'],                // Show in console/terminal
+]
+
+// Option 3: Three reporters (comprehensive)
+reporter: [
+  ['html'],                // Interactive HTML
+  ['list'],                // Terminal output
+  ['json'],                // Programmatic access
+]
+
+// Option 4: With custom options
+reporter: [
+  ['html', { outputFolder: 'my-report' }],
+  ['list'],
+  ['junit', { outputFile: 'results.xml' }],
+]
+
+// Option 5: CI/CD specific
+reporter: [
+  ['json'],                // For CI integration
+  ['junit'],               // For test reports
+  ['github'],              // For GitHub Actions
+]
+
+// Option 6: Minimal (silent)
+reporter: []               // No output (not recommended)
 ```
 
 ### Available Reporters
 
-| Reporter | Output | Location |
-|----------|--------|----------|
-| `html` | Interactive HTML report | `playwright-report/` |
-| `list` | Console output | Terminal |
-| `json` | JSON results | `test-results/` |
-| `junit` | JUnit XML (CI/CD) | Configurable |
-| `github` | GitHub Annotations | For GitHub Actions |
+| Reporter | Output | Location | Use Case |
+|----------|--------|----------|----------|
+| `html` | Interactive HTML report | `playwright-report/` | Detailed analysis |
+| `list` | Console output | Terminal | Quick feedback |
+| `json` | JSON results | `test-results/` | CI/CD integration |
+| `junit` | JUnit XML | Configurable | CI/CD reports |
+| `github` | GitHub Annotations | GitHub Actions | PR feedback |
+| `dot` | Single-line dots | Terminal | Minimal output |
+
+### Reporter Comparison Table
+
+| Reporter | View Type | Details | Best For |
+|----------|-----------|---------|----------|
+| `html` | Visual | High | Analyzing failures |
+| `list` | Text | Medium | Quick feedback |
+| `json` | Structured | High | Automation/APIs |
+| `junit` | XML | Medium | CI systems |
+| `github` | Annotations | Low | GitHub Actions |
+| `dot` | Minimal | Low | CI logs |
 
 ### HTML Reporter
 
 ```typescript
-reporter: [['html']]
+reporter: 'html'
 
 // Output Location: playwright-report/index.html
 // Features:
-//   - Visual test results
-//   - Failures with screenshots
+//   - Visual test results with pass/fail status
+//   - Failure details with error messages
+//   - Screenshots and videos
 //   - Logs and traces
-//   - Test duration
+//   - Test duration and timing
 ```
 
 ### List Reporter
 
 ```typescript
-reporter: [['list']]
+reporter: 'list'
 
 // Output: Console/Terminal
 // Example:
@@ -422,24 +675,41 @@ reporter: [['list']]
 //   ✓ Get All Articles (200ms)
 //   ✓ Create Articles (500ms)
 //   ✓ Delete Articles (300ms)
-//   ✓ PUt Update Articles (600ms)
+//   ✓ Update Articles (600ms)
 ```
 
-### Using Both (Your Setup)
+### Using Multiple Reporters
 
 ```typescript
-reporter: [['html'], ['list']]
+// Run with both HTML and list output
+reporter: [
+  ['html'],           // Generate HTML report
+  ['list'],           // Show list in terminal
+  ['json'],           // Generate JSON results
+]
 
 // You get:
 // 1. HTML report for detailed analysis
 // 2. Console output for quick feedback
+// 3. JSON for programmatic access
+```
+
+### Reporter Configuration
+
+```typescript
+// Custom reporter options
+reporter: [
+  ['html', { outputFolder: 'my-report' }],
+  ['list'],
+  ['junit', { outputFile: 'junit-results.xml' }],
+]
 ```
 
 ---
 
 ## 8. Trace Viewer: Debugging Failed Tests
 
-### Your Configuration
+### Default Configuration
 
 ```typescript
 use: {
@@ -447,12 +717,51 @@ use: {
 }
 ```
 
-| Option | When Trace Recorded |
-|--------|-------------------|
-| `'on-first-retry'` | On first retry of a failed test |
-| `'on'` | Always |
-| `'off'` | Never |
-| `'retain-on-failure'` | Only on failure |
+### What Can You Change?
+
+The `trace` setting controls when to record detailed test execution traces:
+
+```typescript
+// Option 1: Trace on first retry (DEFAULT)
+trace: 'on-first-retry'
+// Records trace only when test is retried
+// Balances debugging info with storage
+// ✅ Best for: Most projects (good default)
+
+// Option 2: Always trace
+trace: 'on'
+// Records trace for every test run
+// High storage usage but maximum debugging info
+// ✅ Best for: Heavy debugging/CI failures
+
+// Option 3: Never trace
+trace: 'off'
+// No traces recorded
+// Saves storage and execution time
+// ✅ Best for: Quick local testing
+
+// Option 4: Trace only on failure
+trace: 'retain-on-failure'
+// Records trace only for failed tests
+// Good balance of storage and info
+// ✅ Best for: Production pipelines
+
+// Option 5: Conditional tracing
+use: {
+  trace: process.env.CI ? 'on-first-retry' : 'off'
+}
+// Trace on CI only, no traces locally
+// ✅ Best for: Faster local development
+```
+
+### Trace Options Comparison
+
+| Option | When Recorded | Storage | Use Case |
+|--------|---|---|---|
+| `on-first-retry` | First retry only | 🟡 Medium | Default (good balance) |
+| `on` | Every test | 🔴 High | Heavy debugging |
+| `off` | Never | 🟢 None | Fast local tests |
+| `retain-on-failure` | Failed tests only | 🟡 Medium | Production builds |
 
 ### What is a Trace?
 
@@ -503,13 +812,43 @@ npx playwright test --grep "Get Authorization"
 
 Runs only tests matching the pattern
 
+### Run in Headed Mode
+
+```bash
+npx playwright test --headed
+```
+
+Shows browser UI while tests run (for browser-based tests). Good for watching test execution visually.
+
+**Example Output**: Browser window opens showing each step of the test.
+
+### Run in Headless Mode
+
+```bash
+npx playwright test --headed=false
+```
+
+Runs without browser UI (default behavior). Faster, uses less resources.
+
+**When to Use**:
+- CI/CD environments
+- Running on servers without displays
+- Faster test execution
+
 ### Run in Debug Mode
 
 ```bash
 npx playwright test --debug
 ```
 
-Opens Inspector for step-by-step debugging
+Opens Inspector for step-by-step debugging. Step through code, inspect elements, and watch network requests.
+
+**Inspector Features**:
+- Step through test line-by-line
+- Inspect DOM elements
+- View network requests
+- See console output
+- Evaluate expressions
 
 ### Run with UI Mode
 
@@ -517,7 +856,14 @@ Opens Inspector for step-by-step debugging
 npx playwright test --ui
 ```
 
-Opens interactive test runner with live feedback
+Opens interactive test runner with live feedback. Visual test explorer with pass/fail indicators.
+
+**UI Mode Features**:
+- Watch tests run in real-time
+- See test timeline
+- View pass/fail status
+- Re-run failed tests
+- Step through execution
 
 ### Watch Mode (Re-run on File Change)
 
@@ -525,40 +871,82 @@ Opens interactive test runner with live feedback
 npx playwright test --watch
 ```
 
-Automatically re-runs tests when you save files
+Automatically re-runs tests when you save files. Great for development and debugging.
+
+**Typical Workflow**:
+1. Save test file changes
+2. Tests automatically re-run
+3. See results in console immediately
+4. Fix issues and repeat
 
 ### Run with Reporter
 
 ```bash
 npx playwright test --reporter=html
 npx playwright test --reporter=list
+npx playwright test --reporter=json
+```
+
+Specify which reporter to use. Can override config values.
+
+**Multiple Reporters**:
+```bash
+npx playwright test --reporter=html --reporter=list
+```
+
+### Combined Commands
+
+```bash
+# Run specific file in headed mode with UI
+npx playwright test hooks.spec.ts --headed --ui
+
+# Run with grep pattern in debug mode
+npx playwright test --grep "Delete" --debug
+
+# Run with watch mode in headed mode
+npx playwright test --watch --headed
+
+# Run with custom reporter and specific project
+npx playwright test --reporter=json --project=api-test
 ```
 
 ---
 
 ## 10. CI/CD Integration
 
-### Your Configuration for CI
+### Default Configuration for CI
 
 ```typescript
-forbidOnly: !!process.env.CI,  // ❌ Fail if test.only found
-retries: process.env.CI ? 2 : 0,  // 2 retries
-workers: process.env.CI ? 1 : undefined,  // 1 worker
+forbidOnly: !!process.env.CI,           // ❌ Fail if test.only found
+retries: process.env.CI ? 2 : 0,        // 2 retries on CI
+workers: process.env.CI ? 1 : undefined,  // 1 worker on CI
 ```
 
-### Detection
+### How Playwright Detects CI
 
-Playwright detects CI environment from:
+Playwright automatically detects CI environments:
 ```typescript
-process.env.CI  // Set by GitHub Actions, GitLab, Jenkins, etc.
+process.env.CI  // Set by most CI/CD platforms
 ```
 
-### Example: GitHub Actions
+### CI Platforms That Set `CI=true`
+
+- GitHub Actions
+- GitLab CI
+- Jenkins
+- CircleCI
+- Travis CI
+- Azure Pipelines
+- AWS CodeBuild
+- And many others...
+
+### Example: GitHub Actions Workflow
 
 ```yaml
 # .github/workflows/tests.yml
-name: Tests
+name: Playwright Tests
 on: [push, pull_request]
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -568,16 +956,45 @@ jobs:
         with:
           node-version: 18
       - run: npm install
+      - run: npx playwright install
       - run: npx playwright test
-        env:
-          CI: true  # Triggers CI-specific config
+        # CI environment variable automatically set by GitHub Actions
 ```
 
+### Configuration Behavior on CI
+
 When `CI=true`:
-- Tests run sequentially (1 worker)
-- Failed tests retry twice
-- `.only` tests are forbidden
-- HTML report generated for artifacts
+
+```typescript
+forbidOnly: !!process.env.CI  // = true
+// ❌ Fails if any test uses test.only
+// Prevents accidental skipped tests in CI
+
+retries: process.env.CI ? 2 : 0  // = 2
+// Automatically retry failed tests up to 2 times
+// Handles temporary network issues
+
+workers: process.env.CI ? 1 : undefined  // = 1
+// Run tests sequentially (one at a time)
+// More stable on shared CI infrastructure
+```
+
+### Configuration Behavior Locally
+
+When `CI` is NOT set:
+
+```typescript
+forbidOnly: !!process.env.CI  // = false
+// ✅ Allows test.only for quick debugging
+
+retries: process.env.CI ? 2 : 0  // = 0
+// Fail immediately on error
+// Faster feedback during development
+
+workers: process.env.CI ? 1 : undefined  // = undefined
+// Use default (all CPU cores)
+// Faster test execution locally
+```
 
 ---
 
@@ -692,72 +1109,172 @@ reporter: [['html'], ['list']]  // Your setup
 
 ## Best Practices for Test Execution
 
-### ✅ 1. Use Sequential for API Tests
+### ✅ 1. Use Parallel for Independent Tests
 
-API tests often share state. Sequential execution avoids conflicts:
+Most UI tests don't share state:
 ```typescript
-fullyParallel: false  // Good for API tests
+fullyParallel: true  // Good for UI tests (default)
 ```
 
-### ✅ 2. Use Parallel for Independent UI Tests
+**Benefits**:
+- Faster execution (3x-10x speedup)
+- Better resource utilization
+- Standard practice
 
-UI tests usually don't share state:
+### ✅ 2. Use Sequential for Dependent Tests
+
+API tests or shared resources:
 ```typescript
-fullyParallel: true  // Good for UI tests
+fullyParallel: false  // Good for API/dependent tests
 ```
 
-### ✅ 3. Configure Retries Wisely
+**Benefits**:
+- Avoids conflicts and race conditions
+- Simpler debugging
+- More predictable results
+
+### ✅ 3. Configure Retries by Environment
 
 ```typescript
-retries: process.env.CI ? 2 : 0  // Your approach (good)
+retries: process.env.CI ? 2 : 0  // Default pattern (good)
 // Fail fast locally, retry in CI
 ```
 
-### ✅ 4. Always Use Reporters
+**Benefits**:
+- Quick feedback during development
+- Handles flaky tests in CI
+- Reduces false positives
 
-```typescript
-reporter: [['html'], ['list']]  // Visibility is important
-```
-
-### ✅ 5. Keep `forbidOnly` Enabled
+### ✅ 4. Always Enable forbidOnly in CI
 
 ```typescript
 forbidOnly: !!process.env.CI  // Prevent accidental .only
 ```
 
+**Benefits**:
+- Prevents skipped tests reaching CI
+- Catches developer mistakes
+- Ensures full test suite runs
+
+### ✅ 5. Use Multiple Reporters
+
+```typescript
+reporter: [
+  ['html'],    // Detailed analysis
+  ['list'],    // Quick feedback
+  ['json'],    // Programmatic access
+]
+```
+
+**Benefits**:
+- Multiple views of results
+- Better visibility
+- CI/CD integration friendly
+
 ---
 
-## Summary Table
+## Complete Configuration Reference: Defaults and Alternatives
 
-| Setting | Your Value | Purpose |
-|---------|-----------|---------|
-| `testDir` | `'./tests'` | Where to find tests |
-| `fullyParallel` | `false` | Sequential execution (API safe) |
-| `forbidOnly` | `true` (on CI) | Prevent skipped tests in CI |
-| `retries` | `2` (on CI) | Retry flaky tests |
-| `workers` | `1` (on CI) | Single process on CI |
-| `reporter` | `html`, `list` | Test result output |
-| `trace` | `on-first-retry` | Debug trace on retry |
-| `projects` | `api-test` | API testing config |
+### All Configuration Options with Changeable Values
+
+```typescript
+export default defineConfig({
+  // 1. Test Discovery
+  testDir: './tests',              // Can change: './e2e', './src', etc.
+
+  // 2. Parallelization
+  fullyParallel: true,             // Can change: false
+  // true = parallel (default, faster)
+  // false = sequential (more stable)
+
+  // 3. forbidOnly Protection
+  forbidOnly: !!process.env.CI,    // Can change: true, false
+  // true = forbid test.only() everywhere
+  // false = allow test.only() everywhere
+  // !!process.env.CI = forbid on CI only (recommended)
+
+  // 4. Retries
+  retries: process.env.CI ? 2 : 0, // Can change: 0, 1, 2, 3, 4, 5...
+  // 0 = no retries
+  // 1 = retry once
+  // 2 = retry twice (standard on CI)
+  // 3+ = more retries for flaky tests
+
+  // 5. Workers
+  workers: process.env.CI ? 1 : undefined,  // Can change: 1, 2, 4, 8, undefined
+  // 1 = sequential
+  // 2-8 = parallel with specific workers
+  // undefined = auto (uses CPU cores)
+
+  // 6. Reporters
+  reporter: 'html',                // Can change: 'list', 'json', 'junit', 'github', 'dot'
+  // Or multiple: [['html'], ['list'], ['json']]
+  // String = single reporter
+  // Array = multiple reporters
+
+  // 7. Trace Viewer
+  use: {
+    trace: 'on-first-retry',       // Can change: 'on', 'off', 'retain-on-failure'
+    // 'on-first-retry' = trace on first retry (default, good balance)
+    // 'on' = trace every test (storage heavy)
+    // 'off' = no traces (save storage)
+    // 'retain-on-failure' = trace only failed tests
+  },
+
+  // 8. Projects
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // Can add: firefox, webkit, mobile, edge, etc.
+    // Or remove projects for API testing
+  ],
+});
+```
+
+---
+
+## Summary Table: Defaults and Alternatives
+
+| Setting | Default Value | Alternative Values | Use Case |
+|---------|---|---|---|
+| `testDir` | `'./tests'` | `'./e2e'`, `'./src'`, custom path | Where to find tests |
+| `fullyParallel` | `true` | `false` | Parallel (true) vs Sequential (false) |
+| `forbidOnly` | `!!process.env.CI` | `true`, `false` | Allow/forbid test.only() |
+| `retries` | `0` locally, `2` on CI | `0, 1, 2, 3, 4, 5...` | How many retries |
+| `workers` | `undefined` locally, `1` on CI | `1, 2, 4, 8, undefined` | Parallel workers count |
+| `reporter` | `'html'` | `'list'`, `'json'`, `'junit'`, `'github'`, `'dot'`, or array | Report format(s) |
+| `trace` | `'on-first-retry'` | `'on'`, `'off'`, `'retain-on-failure'` | When to record traces |
+| `projects` | Multiple browsers | Single project, API config | Test environments |
 
 ---
 
 ## Practice Questions
 
-1. **Q**: Why does your config use `fullyParallel: false`?
-   **A**: API tests often run against the same server and may share state. Sequential execution prevents conflicts.
+1. **Q**: Why is `fullyParallel: true` the default in Playwright?
+   **A**: Most UI tests are independent and don't share state. Parallel execution runs tests simultaneously, making the suite much faster.
 
 2. **Q**: What happens when a test fails with `retries: 2` on CI?
-   **A**: It automatically re-runs up to 2 times. If any attempt passes, the test is marked as passed.
+   **A**: The test automatically re-runs up to 2 times. If any attempt passes, the test is marked as passing overall.
 
-3. **Q**: How many times do all tests run with 3 projects and 5 test files?
-   **A**: 15 times total (3 projects × 5 files). However, your config has only 1 project ('api-test'), so 5 times.
+3. **Q**: How many times do all tests run if you have 3 projects and 5 test files?
+   **A**: 15 times total (3 projects × 5 test files). Each project runs the entire test suite independently.
 
 4. **Q**: What does `trace: 'on-first-retry'` do?
-   **A**: Records a detailed trace of the first retry attempt, helpful for debugging why the test initially failed.
+   **A**: Records a detailed trace (network requests, DOM snapshots, screenshots) during the first retry of a failed test for debugging.
 
-5. **Q**: How would you run only the hooks test file?
-   **A**: `npx playwright test hooks.spec.ts`
+5. **Q**: What's the difference between `--headed` and `--headless` modes?
+   **A**: `--headed` shows the browser UI during test execution (good for debugging). `--headless` runs without UI (faster, uses less resources, default).
+
+6. **Q**: How does Playwright detect if it's running in CI?
+   **A**: It checks the `process.env.CI` variable, which is automatically set by CI platforms like GitHub Actions, GitLab CI, Jenkins, etc.
+
+7. **Q**: Why would you use sequential execution (`fullyParallel: false`)?
+   **A**: When tests depend on each other or share resources (like a database or API). Parallel execution could cause conflicts or race conditions.
+
+8. **Q**: What does `forbidOnly: !!process.env.CI` prevent?
+   **A**: It prevents any test using `test.only()` from running in CI environments, ensuring the full test suite always runs in production pipelines.
 
 ---
 
