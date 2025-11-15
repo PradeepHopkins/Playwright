@@ -6,7 +6,7 @@
  */
 
 export class RequestHandler {
-
+    private defaultBaseUrl: string = "https://conduit-api.bondaracademy.com"
     private baseUrl: string = ''
     private apiPath: string = ''
     private apiParams: object = {}
@@ -86,5 +86,15 @@ export class RequestHandler {
         this.apiHeader = {}
         this.apiBody = {}
         return this
+    }
+
+    private buildUrl() {
+        const url = new URL(`${this.baseUrl ?? this.defaultBaseUrl}`)
+        
+        for (const [Key, value] of Object.entries(this.apiParams)) {
+            url.searchParams.append(Key, value)
+        }
+        console.log(url.toString())
+        return url.toString()
     }
 }
