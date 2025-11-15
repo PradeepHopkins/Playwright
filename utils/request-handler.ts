@@ -5,14 +5,22 @@
  * 
  */
 
+import { APIRequestContext } from "@playwright/test"
+
 export class RequestHandler {
-    private defaultBaseUrl: string = "https://conduit-api.bondaracademy.com"
+    private defaultBaseUrl: string = ''
     private baseUrl: string = ''
     private apiPath: string = ''
     private apiParams: object = {}
     private apiHeader: object = {}
     private apiBody: object = {}
-    private request: any = null
+    private request: APIRequestContext
+
+    constructor(request: APIRequestContext, defaultBaseUrl: string) {
+        this.request = request
+        this.baseUrl = defaultBaseUrl
+
+    }
 
     /**
      * Set the base URL for the API
@@ -61,16 +69,6 @@ export class RequestHandler {
      */
     body(body: object): this {
         this.apiBody = body
-        return this
-    }
-
-    /**
-     * Set Playwright request object (usually passed from test context)
-     * @param request - Playwright's request object
-     * @returns this - For method chaining
-     */
-    withRequest(request: any): this {
-        this.request = request
         return this
     }
 
