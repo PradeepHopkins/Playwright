@@ -5,20 +5,21 @@
  * 
  */
 
-import { APIRequestContext } from "@playwright/test"
+import { APIRequestContext, expect } from "@playwright/test"
 
 export class RequestHandler {
-    private defaultBaseUrl: string = ''
+    private request: APIRequestContext
     private baseUrl: string = ''
+    private defaultBaseUrl: string
     private apiPath: string = ''
     private apiParams: object = {}
-    private apiHeader: object = {}
+    private apiHeader: Record<string, string> = {}
     private apiBody: object = {}
-    private request: APIRequestContext
 
-    constructor(request: APIRequestContext, defaultBaseUrl: string) {
+
+    constructor(request: APIRequestContext, apiBaseUrl: string) {
         this.request = request
-        this.baseUrl = defaultBaseUrl
+        this.defaultBaseUrl = apiBaseUrl
 
     }
 
@@ -57,7 +58,7 @@ export class RequestHandler {
      * @param header - Headers object (e.g., { 'Authorization': 'Bearer token' })
      * @returns this - For method chaining
      */
-    header(header: object): this {
+    header(header: Record<string, string>): this {
         this.apiHeader = header
         return this
     }
@@ -72,27 +73,70 @@ export class RequestHandler {
         return this
     }
 
-    /**
-     * Reset all configuration to defaults
-     * Useful for test cleanup or running multiple requests
-     * @returns this - For method chaining
+    /* 
+        private getUrl() {
+            const url = new URL(`${this.baseUrl ?? this.defaultBaseUrl}${this.apiPath}`)
+            for (const [Key, value] of Object.entries(this.apiParams)) {
+                url.searchParams.append(Key, value)
+            }
+            console.log(url.toString())
+            return url.toString()
+        }
      */
-    reset(): this {
-        this.baseUrl = ''
-        this.apiPath = ''
-        this.apiParams = {}
-        this.apiHeader = {}
-        this.apiBody = {}
-        return this
+
+    private getUrl() {
+        // Prefer baseUrl only if it is NOT empty, otherwise fall back to defaultBaseUrl
+        const base = this.baseUrl.trim() !== '' ? this.baseUrl : this.defaultBaseUrl;
+
+        // Correct URL joining
+        const url = new URL(this.apiPath, base);
+
+        // Append query params
+        for (const [key, value] of Object.entries(this.apiParams)) {
+            url.searchParams.append(key, String(value));
+        }
+
+        console.log(url.toString());
+        return url.toString();
     }
 
-    private buildUrl() {
-        const url = new URL(`${this.baseUrl ?? this.defaultBaseUrl}`)
-        
-        for (const [Key, value] of Object.entries(this.apiParams)) {
-            url.searchParams.append(Key, value)
-        }
-        console.log(url.toString())
-        return url.toString()
+    async getRequest(statusCode: number) {
+        const url = this.getUrl()
+        const response = await this.request.get(url, {
+            headers: this.apiHeader
+        })
+        const responseJson = await response.json()
+        expect(response.status()).toEqual(statusCode)
+        return responseJson
+    }
+
+    async postRequest(statusCode: number) {
+        const url = this.getUrl()
+        const response = await this.request.post(url, {
+            headers: this.apiHeader,
+            data: this.apiBody
+        })
+        const responseJson = await response.json()
+        expect(response.status()).toEqual(statusCode)
+        return responseJson
+    }
+
+    async putRequest(statusCode: number) {
+        const url = this.getUrl()
+        const response = await this.request.put(url, {
+            headers: this.apiHeader,
+            data: this.apiBody
+        })
+        const responseJson = await response.json()
+        expect(response.status()).toEqual(statusCode)
+        return responseJson
+    }
+
+    async deleteRequest(statusCode: number) {
+        const url = this.getUrl()
+        const response = await this.request.delete(url, {
+            headers: this.apiHeader
+        })
+        expect(response.status()).toEqual(statusCode)
     }
 }
