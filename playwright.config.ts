@@ -13,7 +13,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   // timeout: 10000,               // Default test timeout
-  globalTimeout: 10000,            // Entire test run timeout
+  // globalTimeout: 10000,            // Entire test run timeout
 
   /* expect: {
       timeout: 2000  // set timeout for expect()

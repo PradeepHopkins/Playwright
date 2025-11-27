@@ -156,21 +156,6 @@ test('Locating parent elements', async ({ page }) => {
   await page.locator(':text-is("Using the Grid")').locator("..").getByRole('textbox', { name: 'Email' }).click()
 
 })
-/* 
-test('Signin Page', async ({ page }) => {
-
-  await page.goto('https://bolt.playrealbrokerage.com/login')
-  const paragraphLogin = await page.getByRole('paragraph').filter({ hasText: 'Login' }).click();
-  await page.getByTestId('usernameOrEmail').click()
-  page.getByLabel('Email / Username')
-  await page.getByTestId('password').click()
-  page.getByLabel('Password')
-  const passowrdSvg = page.getByTestId('password-input-toggle')
-  await page.getByRole('button', { name: 'Login' }).click();
-  page.getByRole('link', { name: 'Join Real' })
-  page.getByRole('link', { name: 'Trouble logging in?' })
-
-}); */
 
 test('Reusing Locator', async ({ page }) => {
 
