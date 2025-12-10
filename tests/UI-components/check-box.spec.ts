@@ -6,9 +6,9 @@ test.beforeEach(async ({ page }) => {
     await page.getByRole('link', { name: 'Toastr' }).click()
 })
 
-// difference between check and click check method will check the status of the checkbox
-// and if the checkbox already checked it will not unselect this checkbox.
-// It will remain selected while Click Command is just performing the click and doesn't validate the status of the checkbox.
+// difference between check and click, check method will check the status of the checkbox
+// and if the checkbox already checked it will not unselect this checkbox it will remain selected
+// while Click Command is just performing the click and doesn't validate the status of the checkbox.
 // So better to use a method check.
 
 test('CheckBoxes', async ({ page }) => {
@@ -27,7 +27,7 @@ test('CheckBoxes', async ({ page }) => {
     // To be checked
     for (const box of await allCheckboxes.all()) {
         await box.check({ force: true })
-        expect(box).toBeChecked()
+        await expect(box).toBeChecked()
     }
 
     // To be unchecked

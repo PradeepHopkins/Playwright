@@ -14,5 +14,5 @@ test("Dialog Box", async ({ page }) => {
     })
     const tableColumn = page.getByRole('table').locator('tr', { hasText: 'mdo@gmail.com' })
     await tableColumn.locator('.nb-trash').click()
-    expect(page.locator('table tr').first()).not.toHaveText('mdo@gmail.com')
+    await expect(page.locator('table tr').first()).not.toHaveText('mdo@gmail.com')
 })

@@ -32,7 +32,6 @@ test('Validate headers color', async ({ page }) => {
     const optionLists = page.locator('nb-option-list nb-option')
 
     const headers = page.locator('nb-layout-header ')
-    // await dropDrownMenu.click() //  In order to repeat this loop, we want to open it again and to begin this loop.
     const colors = {
         ' Light': 'rgb(255, 255, 255)',
         ' Dark': 'rgb(34, 43, 69)',
