@@ -9,6 +9,10 @@ export class NavigationPage {
 
     }
 
+    // Prefer the “keep it simple” principle—avoid over-engineering your code.
+    // Keep your locators inside the page-object methods where the related actions occur.
+    // This approach has consistently proven easier to debug, update, and maintain.
+
     async formLayoutsPage() {
         await this.selectGroupMenuItems('Forms')
         await this.page.getByText('Form Layouts').click()

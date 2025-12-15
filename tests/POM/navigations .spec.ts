@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
     await page.goto("http://localhost:4200")
 })
 
-test('Navigate form Page', async ({ page }) => {
+test('Navigate form Pages', async ({ page }) => {
     const navigateTo = new NavigationPage(page)
     await navigateTo.ToastrPage()
     await navigateTo.TooltipPage()
