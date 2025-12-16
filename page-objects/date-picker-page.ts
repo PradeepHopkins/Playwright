@@ -24,7 +24,7 @@ export class DatePickerPage {
         await expect(commonDatePicker).toHaveValue(dateToAssert)
     }
 
-    async selectDateInTheCalendar(numberOfDaysFromToday: number) {
+   private async selectDateInTheCalendar(numberOfDaysFromToday: number) {
         const date = new Date()
         date.setDate(date.getDate() + numberOfDaysFromToday)
         const expectedDate = date.getDate().toString()
