@@ -11,7 +11,7 @@ test.beforeEach('Mock API Test', async ({ page }) => {
         const response = await route.fetch()
         const responseBody = await response.json()
         responseBody.articles[0].title = 'This the mock test title'
-          responseBody.articles[0].description = 'This the mock test for api interception'
+        responseBody.articles[0].description = 'This the mock test for api interception'
         await route.fulfill({
             body: JSON.stringify(responseBody)
         })
