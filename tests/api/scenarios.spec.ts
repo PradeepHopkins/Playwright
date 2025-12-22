@@ -11,13 +11,13 @@ The UI will then be used only for validating the delete functionality.
 
 */
 
-test.beforeEach('Sign in', async ({ page }) => {
-    await page.goto('https://conduit.bondaracademy.com/')
-    await page.getByRole('link', { name: ' Sign in ' }).click()
-    await page.getByRole('textbox', { name: 'Email' }).fill('pradeepmathialagan.work@gmail.com')
-    await page.getByRole('textbox', { name: 'Password' }).fill('Playwright@2025')
-    await page.getByRole('button', { name: ' Sign in ' }).click()
-})
+// test.beforeEach('Sign in', async ({ page }) => {
+//     await page.goto('https://conduit.bondaracademy.com/')
+//     await page.getByRole('link', { name: ' Sign in ' }).click()
+//     await page.getByRole('textbox', { name: 'Email' }).fill('pradeepmathialagan.work@gmail.com')
+//     await page.getByRole('textbox', { name: 'Password' }).fill('Playwright@2025')
+//     await page.getByRole('button', { name: ' Sign in ' }).click()
+// })
 
 test('Delete Article', async ({ page, request }) => {
     // Get Login Token
@@ -79,6 +79,7 @@ Send a DELETE request to the backend API to remove the article.
 Verify that the cleanup is successful, ensuring a stable and reusable test. */
 
 test('Create Articles', async ({ page, request }) => {
+     await page.goto('https://conduit.bondaracademy.com/')
     const newArticles = 'Mock Test for Create and Delete'
     await page.getByRole('link', { name: ' New Article ' }).click()
     await page.getByRole('textbox', { name: 'Article Title' })
