@@ -11,33 +11,13 @@ The UI will then be used only for validating the delete functionality.
 
 */
 
-// test.beforeEach('Sign in', async ({ page }) => {
-//     await page.goto('https://conduit.bondaracademy.com/')
-//     await page.getByRole('link', { name: ' Sign in ' }).click()
-//     await page.getByRole('textbox', { name: 'Email' }).fill('pradeepmathialagan.work@gmail.com')
-//     await page.getByRole('textbox', { name: 'Password' }).fill('Playwright@2025')
-//     await page.getByRole('button', { name: ' Sign in ' }).click()
-// })
-
 test('Delete Article', async ({ page, request }) => {
-    // Get Login Token
-    const tokenResponse = await request.post('https://conduit-api.bondaracademy.com/api/users/login', {
-        data: { "user": { "email": "pradeepmathialagan.work@gmail.com", "password": "Playwright@2025" } }
-    })
-    const tokenResponseBody = await tokenResponse.json()
-    const token = tokenResponseBody.user.token
-    expect(tokenResponse.status()).toEqual(200)
+    await page.goto('https://conduit.bondaracademy.com/')
     // Create Articles
     const articleResponse = await request.post('https://conduit-api.bondaracademy.com/api/articles/', {
         data: { "article": { "title": "Test-001", "description": "Testing Mock Scenario", "body": "UI/API Mock scenario for article delete", "tagList": [] } },
-        headers: {
-            authorization: `Token ${token}`
-        },
-
     })
     expect(articleResponse.status()).toEqual(201)
-    // const articleResponseBody = await articleResponse.json()
-    // const slugId = articleResponseBody.article.slug
 
     // Article list container
     const articleTitle = 'Test-001';
@@ -79,7 +59,7 @@ Send a DELETE request to the backend API to remove the article.
 Verify that the cleanup is successful, ensuring a stable and reusable test. */
 
 test('Create Articles', async ({ page, request }) => {
-     await page.goto('https://conduit.bondaracademy.com/')
+    await page.goto('https://conduit.bondaracademy.com/')
     const newArticles = 'Mock Test for Create and Delete'
     await page.getByRole('link', { name: ' New Article ' }).click()
     await page.getByRole('textbox', { name: 'Article Title' })
@@ -98,24 +78,13 @@ test('Create Articles', async ({ page, request }) => {
     await page.getByRole('link', { name: ' Home ' }).click()
     // Verfiy Articles published
     await page.waitForResponse('https://conduit-api.bondaracademy.com/api/articles?limit=10&offset=0')
-   // Article list container
+    // Article list container
     const articleList = page.locator('app-article-list');
     // Specific article preview by title
     articleList.locator('app-article-preview').filter({ has: page.locator('h1', { hasText: newArticles }) });
     await expect(articleList).toContainText(newArticles)
-    // Get Login Token
-    const tokenResponse = await request.post('https://conduit-api.bondaracademy.com/api/users/login', {
-        data: { "user": { "email": "pradeepmathialagan.work@gmail.com", "password": "Playwright@2025" } }
-    })
-    const tokenResponseBody = await tokenResponse.json()
-    const accesToken = tokenResponseBody.user.token
-    expect(tokenResponse.status()).toEqual(200)
     // Delete Article
-    const deleteResponse = await request.delete(`https://conduit-api.bondaracademy.com/api/articles/${slugId}`, {
-        headers: {
-            authorization: `Token ${accesToken}`
-        }
-    })
+    const deleteResponse = await request.delete(`https://conduit-api.bondaracademy.com/api/articles/${slugId}`)
     expect(deleteResponse.status()).toEqual(204)
 
 })
