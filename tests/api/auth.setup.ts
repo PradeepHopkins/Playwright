@@ -5,7 +5,7 @@ import fs from 'fs'
 // This is effectively a local alias, renaming how the module is referenced within the TypeScript file.
 // Renamed on import: `test` is aliased to `setup` to better reflect its role here.
 
-/* setup('UI Authentication', async ({ page }) => {
+setup('UI Authentication', async ({ page }) => {
     const authState = '.auth/user.json'
     await page.goto('https://conduit.bondaracademy.com/')
     await page.getByRole('link', { name: ' Sign in ' }).click()
@@ -17,7 +17,7 @@ import fs from 'fs'
     await page.waitForResponse('https://conduit-api.bondaracademy.com/api/tags')
 
     await page.context().storageState({ path: authState })
-}) */
+})
 
 // summarize:
 // created a new file offset setups where we moved the step related to authentication.
@@ -31,7 +31,7 @@ import fs from 'fs'
 // And now every time we run the framework authentication will happen just once and all other tests will
 
 // share this authentication state for the other tests.
-
+/* 
 const authState = '.auth/user.json'
 
 setup('API Authentication', async ({ request }) => {
@@ -44,4 +44,4 @@ setup('API Authentication', async ({ request }) => {
 
     fs.writeFileSync(authState, JSON.stringify(user))
     process.env['ACCESS_TOKEN'] = accesToken
-})
+}) */
