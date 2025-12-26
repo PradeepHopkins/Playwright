@@ -13,4 +13,4 @@ test('parametrized method', async ({ page }) => {
     await navigateTo.formLayoutsPage()
     await onFormLayout.submitUsingTheGridWithCredentialsAndSelectOption('Padeep@gamil.com', 'Test@124', 'Option 1')
     await onFormLayout.submitInlineFormWithNameEmailAndCheckbox('Jimmy Hopkins', 'hopkins@gmail.com', true)
-})
+})  
