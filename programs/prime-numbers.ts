@@ -1,37 +1,23 @@
-function printPrimes(limit: number): void {
-  for (let num = 2; num <= limit; num++) {
-    if (isPrime(num)) {
-      console.log(num);
+// Optimized Version (Easy to Understand)
+const limit = 50;
+
+for (let num = 2; num <= limit; num++) {
+  let isPrime = true;
+
+  // Only check up to half of the number
+  for (let i = 2; i <= num / 2; i++) {
+    if (num % i === 0) {
+      isPrime = false;
+      break;
     }
   }
+
+  if (isPrime) console.log(num);
 }
 
-function isPrime(n: number): boolean {
-  if (n < 2) return false;
-  for (let i = 2; i <= Math.sqrt(n); i++) {
-    if (n % i === 0) return false;
-  }
-  return true;
-}
+// A number cannot be divided by anything greater than half of itself
 
-// Print primes up to 50
-printPrimes(50);
+// Cuts the checks almost in half
 
-function printPrime(limit: number): void {
-  for (let num = 2; num <= limit; num++) {
-    let isPrime = true;
-
-    for (let i = 2; i < num; i++) {
-      if (num % i === 0) {
-        isPrime = false;
-        break;
-      }
-    }
-
-    if (isPrime) console.log(num);
-  }
-}
-
-printPrime(50);
-
+// Easier to understand than Math.sqrt()
 
