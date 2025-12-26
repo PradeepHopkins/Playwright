@@ -1,6 +1,6 @@
 import test from '@playwright/test'
-import { NavigationPage } from '../../../page-objects/navigation-page'
-import { FormLayoutsPage } from '../../../page-objects/form-layouts-page'
+import { NavigationPage } from '../page-objects/navigation-page'
+import { FormLayoutsPage } from '../page-objects/form-layouts-page'
 import {faker} from '@faker-js/faker'
 
 const randomFullName =  faker.person.fullName()
