@@ -1,6 +1,6 @@
 import { test as setup } from '@playwright/test'
-import user from '../../.auth/user.json'
 import fs from 'fs'
+import 'dotenv/config'
 // Instead of importing this as `test`, import it as `setup`.
 // This is effectively a local alias, renaming how the module is referenced within the TypeScript file.
 // Renamed on import: `test` is aliased to `setup` to better reflect its role here.
@@ -32,8 +32,8 @@ import fs from 'fs'
 
 // share this authentication state for the other tests.
 
-const authState = '.auth/user.json'
 
+/* 
 setup('API Authentication', async ({ request }) => {
     const tokenResponse = await request.post('https://conduit-api.bondaracademy.com/api/users/login', {
         data: { "user": { "email": "pradeepmathialagan.work@gmail.com", "password": "Playwright@2025" } }
@@ -44,4 +44,36 @@ setup('API Authentication', async ({ request }) => {
 
     fs.writeFileSync(authState, JSON.stringify(user))
     process.env['ACCESS_TOKEN'] = accesToken
+}) */
+
+const authState = '.auth/user.json'
+
+setup('UI Authentication', async ({ request }) => {
+    const tokenResponse = await request.post('https://conduit-api.bondaracademy.com/api/users/login', {
+        data: { "user": { "email":  process.env.USER_EMAIL, "password": process.env.USER_PASSWORD } }
+    })
+    const tokenResponseBody = await tokenResponse.json()
+    const accessToken = tokenResponseBody.user.token
+
+    const storageState = {
+        cookies: [],
+        origins: [
+            {
+                origin: 'https://conduit.bondaracademy.com',
+                localStorage: [
+                    {
+                        name: 'jwtToken',
+                        value: accessToken
+                    }
+                ]
+            }
+        ]
+    }
+
+    fs.mkdirSync('.auth', { recursive: true })
+    // Creates the .auth folder if it doesn’t already exist.
+    // recursive: true prevents errors if the folder already exists.
+    fs.writeFileSync(authState, JSON.stringify(storageState, null, 2))
+    // Writes the storage state to .auth/user.json.
+    // Pretty-printed JSON (null, 2) for readability.
 })

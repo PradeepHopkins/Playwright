@@ -1,12 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+// import dotenv from 'dotenv';
+// dotenv.config();  This ensures variables are available everywhere (tests, setup, fixtures).
 
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -38,10 +37,10 @@ export default defineConfig({
     // navigationTimeout: 60000,         // Timeout for navigation (page.goto, redirects)
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    extraHTTPHeaders: {
-      'Authorization': `Token ${process.env.ACCESS_TOKEN}`
-    },
-    video: 'on' // Default resoultion 800x800
+    // extraHTTPHeaders: {
+    //   'Authorization': `Token ${process.env.ACCESS_TOKEN}`
+    // },
+    // video: 'on' // Default resoultion 800x800
    /*  video: {
       mode: 'on',
       size: {width: 1920, height: 1080}
@@ -51,6 +50,26 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {name: 'setup', testMatch: 'auth.setup.ts'},
+
+    {
+      name: 'testProjectMatch',
+      testMatch: 'article.setup.ts',
+      dependencies: ['setup'],
+      teardown: 'articlecleanup'
+    },
+
+    {
+      name: 'articlecleanup',
+      testMatch: 'article-cleanup-setup.ts'
+    },
+
+    {
+      name: 'testProjectdependencies',
+      testMatch: 'project-dependencies.spec.ts',
+      use: {...devices['Desktop Chrome'], storageState: '.auth/user.json'},
+      dependencies: ['testProjectMatch']
+    },
+
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' },
