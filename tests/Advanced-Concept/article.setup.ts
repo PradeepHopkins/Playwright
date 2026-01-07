@@ -12,16 +12,16 @@ const accessToken =
   )?.value;
 
 setup('NewArticles', async ({ request }) => {
-    const articleResponse = await request.post('https://conduit-api.bondaracademy.com/api/articles/', {
-        data: { "article": { "title": "Test-002", "description": "Testing Mock Scenario", "body": "UI/API Mock scenario for article delete", "tagList": [] } },
-        headers: {
-            'Authorization': `Token ${accessToken}`
-        }
+  const articleResponse = await request.post('https://conduit-api.bondaracademy.com/api/articles/', {
+    data: { "article": { "title": "Test-002", "description": "Testing Mock Scenario", "body": "UI/API Mock scenario for article delete", "tagList": [] } },
+    headers: {
+      'Authorization': `Token ${accessToken}`
+    }
 
-    })
-    expect(articleResponse.status()).toEqual(201)
+  })
+  expect(articleResponse.status()).toEqual(201)
 
-    const responseBody = await articleResponse.json()
-    fs.writeFileSync(dataFile, JSON.stringify({ slugId: responseBody.article.slug }, null, 2))
-    process.env['SLUGID'] =  responseBody.article.slug
+  const responseBody = await articleResponse.json()
+  fs.mkdirSync('.auth', { recursive: true })
+  fs.writeFileSync(dataFile, JSON.stringify({ slugId: responseBody.article.slug }, null, 2))
 })
