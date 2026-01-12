@@ -1,4 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
+import { AUTH_FILE } from './auth-path';
+
 // import dotenv from 'dotenv';
 // dotenv.config();  This ensures variables are available everywhere (tests, setup, fixtures).
 
@@ -11,6 +13,8 @@ import { defineConfig, devices } from '@playwright/test';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
+  globalSetup: require.resolve('./global-setup'),
+  globalTeardown: require.resolve('./global-teardown'),
   // timeout: 10000,               // Default test timeout
   // globalTimeout: 10000,            // Entire test run timeout
 
@@ -25,7 +29,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -41,15 +45,15 @@ export default defineConfig({
     //   'Authorization': `Token ${process.env.ACCESS_TOKEN}`
     // },
     // video: 'on' // Default resoultion 800x800
-   /*  video: {
-      mode: 'on',
-      size: {width: 1920, height: 1080}
-    } */
+    /*  video: {
+       mode: 'on',
+       size: {width: 1920, height: 1080}
+     } */
   },
 
   /* Configure projects for major browsers */
   projects: [
-    {name: 'setup', testMatch: 'auth.setup.ts'},
+    { name: 'setup', testMatch: 'auth.setup.ts' },
 
     {
       name: 'testProjectMatch',
@@ -66,20 +70,20 @@ export default defineConfig({
     {
       name: 'testProjectdependencies',
       testMatch: 'project-dependencies.spec.ts',
-      use: {...devices['Desktop Chrome'], storageState: '.auth/user.json'},
+      use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' },
       dependencies: ['testProjectMatch']
     },
 
     {
-      name: 'chromium',
+      name: 'IgnoreTest',
       use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' },
+      testIgnore: 'project-dependencies.spec.ts',
       dependencies: ['setup']
     },
 
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'], storageState: '.auth/user.json' },
-      dependencies: ['setup']
+      name: 'Chromium',
+      use: { ...devices['Desktop chrome'], storageState: AUTH_FILE },
     },
 
     {
