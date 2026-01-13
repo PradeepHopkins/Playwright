@@ -76,4 +76,6 @@ setup('UI Authentication', async ({ request }) => {
     fs.writeFileSync(authState, JSON.stringify(storageState, null, 2))
     // Writes the storage state to .auth/user.json.
     // Pretty-printed JSON (null, 2) for readability.
+
+    process.env['ACCESS_TOKEN'] = accessToken
 })

@@ -13,8 +13,8 @@ import { AUTH_FILE } from './auth-path';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  globalSetup: require.resolve('./global-setup'),
-  globalTeardown: require.resolve('./global-teardown'),
+  globalSetup: require.resolve('./global-setup.ts'),
+  globalTeardown: require.resolve('./global-teardown.ts'),
   // timeout: 10000,               // Default test timeout
   // globalTimeout: 10000,            // Entire test run timeout
 
@@ -41,9 +41,10 @@ export default defineConfig({
     // navigationTimeout: 60000,         // Timeout for navigation (page.goto, redirects)
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    // extraHTTPHeaders: {
-    //   'Authorization': `Token ${process.env.ACCESS_TOKEN}`
-    // },
+    
+    extraHTTPHeaders: {
+      'Authorization': `Token ${process.env.ACCESS_TOKEN}`
+    },
     // video: 'on' // Default resoultion 800x800
     /*  video: {
        mode: 'on',
@@ -84,6 +85,7 @@ export default defineConfig({
     {
       name: 'Chromium',
       use: { ...devices['Desktop chrome'], storageState: AUTH_FILE },
+      dependencies: ['setup']
     },
 
     {
