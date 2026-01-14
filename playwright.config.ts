@@ -90,6 +90,7 @@ export default defineConfig({
 
    {
     name: 'Mobile',
+    testMatch: 'mobile-device-emulator.spec.ts',
     use: {...devices['iPhone 15 Pro Max']}
     // use: {
     //   viewport: { width: 480, height: 480 },
