@@ -31,7 +31,13 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [['html'], ['list']],
+  reporter: [
+    ['html'],
+    ['list'],
+    ['json', { outputFile: 'test-results/jsonReport.json' }],
+    ['junit', { outputFile: 'test-results/junitReport.xml'}],
+    ['allure-playwright']
+  ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
@@ -41,7 +47,7 @@ export default defineConfig({
     // navigationTimeout: 60000,         // Timeout for navigation (page.goto, redirects)
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    
+
     extraHTTPHeaders: {
       'Authorization': `Token ${process.env.ACCESS_TOKEN}`
     },
@@ -88,14 +94,14 @@ export default defineConfig({
       dependencies: ['setup']
     },
 
-   {
-    name: 'Mobile',
-    testMatch: 'mobile-device-emulator.spec.ts',
-    use: {...devices['iPhone 15 Pro Max']}
-    // use: {
-    //   viewport: { width: 480, height: 480 },
-    // }
-   }
+    {
+      name: 'Mobile',
+      testMatch: 'mobile-device-emulator.spec.ts',
+      use: { ...devices['iPhone 15 Pro Max'] }
+      // use: {
+      //   viewport: { width: 480, height: 480 },
+      // }
+    }
 
     /* Test against mobile viewports. */
     // {
