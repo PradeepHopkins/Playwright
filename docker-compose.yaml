@@ -1,0 +1,11 @@
+version: '29.1.3'
+services: 
+ playwright-test:
+  image: playwright-test
+  build: 
+    context: .
+    dockerfile: ./Dockerfile
+  command: npx playwright test --project=Docker
+  volumes: 
+    - ./playwright-report:/app/playwright-report
+    - ./test-results:/app/test-results  

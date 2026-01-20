@@ -13,8 +13,8 @@ import { AUTH_FILE } from './auth-path';
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  globalSetup: require.resolve('./global-setup.ts'),
-  globalTeardown: require.resolve('./global-teardown.ts'),
+  // globalSetup: require.resolve('./global-setup.ts'),
+  // globalTeardown: require.resolve('./global-teardown.ts'),
   // timeout: 10000,               // Default test timeout
   // globalTimeout: 10000,            // Entire test run timeout
 
@@ -63,22 +63,22 @@ export default defineConfig({
     { name: 'setup', testMatch: 'auth.setup.ts' },
 
     {
-      name: 'testProjectMatch',
+      name: 'articleSetup',
       testMatch: 'article.setup.ts',
       dependencies: ['setup'],
-      teardown: 'articlecleanup'
+      teardown: 'articleCleanup'
     },
 
     {
-      name: 'articlecleanup',
+      name: 'articleCleanup',
       testMatch: 'article-cleanup-setup.ts'
     },
 
     {
-      name: 'testProjectdependencies',
+      name: 'verifyLikeButton',
       testMatch: 'project-dependencies.spec.ts',
       use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' },
-      dependencies: ['testProjectMatch']
+      dependencies: ['articleSetup']
     },
 
     {
@@ -89,11 +89,23 @@ export default defineConfig({
     },
 
     {
-      name: 'Chromium',
+      name: 'AuthState',
       use: { ...devices['Desktop chrome'], storageState: AUTH_FILE },
       dependencies: ['setup']
     },
 
+    {
+      name: 'Chromium',
+      use: { ...devices['Desktop chrome']},
+    },
+
+     {
+      name: 'Docker',
+      testMatch: 'test-date-generator.spec.ts',
+      use: { ...devices['Desktop chrome']},
+    },
+
+  /* Test against mobile viewports. */
     {
       name: 'Mobile',
       testMatch: 'mobile-device-emulator.spec.ts',
@@ -102,16 +114,6 @@ export default defineConfig({
       //   viewport: { width: 480, height: 480 },
       // }
     }
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
 
     /* Test against branded browsers. */
     // {
@@ -125,9 +127,10 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  // webServer: {
-  //   command: 'npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
+  webServer: {
+    command: 'npm run start',
+    url: 'http://localhost:4200',
+    reuseExistingServer: !process.env.CI,
+  },
+
 });

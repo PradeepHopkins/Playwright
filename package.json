@@ -8,7 +8,8 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "ng serve"
+    "start": "ng serve",
+    "pageObject-chromium": "npx playwright test test-date-generator.spec.ts --project=chromium"
   },
   "overrides": {
     "stylus": "github:stylus/stylus#0.54.5"
